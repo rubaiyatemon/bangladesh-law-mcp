@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  smoke:
+    name: Lint & smoke test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyflakes
+
+      - name: Lint with pyflakes
+        run: pyflakes server.py
+
+      - name: Byte-compile (catches syntax errors on every supported version)
+        run: python -m compileall -q server.py
+
+      - name: Import sanity check
+        env:
+          # Point at the sibling dataset so the import-time path check
+          # doesn't bail out on a fresh checkout.
+          BLA_DATA_DIR: ./tests/fixtures/acts
+        run: |
+          mkdir -p tests/fixtures/acts
+          # Create one minimal act so the index builder has something to chew on.
+          cat > tests/fixtures/acts/act-print-1.json <<'JSON'
+          {
+            "act_title": "Test Act, 1900",
+            "act_no": "I",
+            "act_year": "1900",
+            "language": "english",
+            "token_count": 10,
+            "sections": [{"section_title": "Short title", "section_content": "1. This Act may be cited as the Test Act, 1900."}],
+            "footnotes": [],
+            "csv_metadata": {"is_repealed": false},
+            "source_url": "http://example.invalid/act-1.html",
+            "fetch_timestamp": "2026-01-01T00:00:00Z",
+            "government_context": {},
+            "legal_system_context": {}
+          }
+          JSON
+          python -c "import server; assert len(server._index) == 1, server._index; print('OK, indexed', len(server._index), 'act(s)')"

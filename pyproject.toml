@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bangladesh-law-mcp"
+version = "0.1.0"
+description = "Model Context Protocol (MCP) server exposing the Bangladesh Legal Acts Dataset to Claude, Gemini, GPT, and any MCP-compatible client."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Bangladesh Law MCP Contributors" },
+]
+keywords = ["mcp", "model-context-protocol", "bangladesh", "law", "legal-acts", "llm", "claude", "gemini", "gpt"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business",
+    "Topic :: Sociology :: Law",
+]
+dependencies = [
+    "mcp>=1.2.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/sakhadib/bangladesh-law-mcp"
+Dataset = "https://github.com/sakhadib/Bangladesh-Legal-Acts-Dataset"
+Issues = "https://github.com/sakhadib/bangladesh-law-mcp/issues"
+
+[project.scripts]
+bangladesh-law-mcp = "server:main"
+
+[tool.setuptools]
+py-modules = ["server"]
