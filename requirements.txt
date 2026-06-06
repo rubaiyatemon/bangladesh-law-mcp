@@ -1,1 +1,5 @@
-mcp>=1.2.0
+mcp[cli]>=1.2.0
+# Web stack required for the Streamable HTTP transport (Fly.io / hosted).
+# uvicorn drives the ASGI server, starlette is pulled in by FastMCP.
+uvicorn>=0.30.0
+starlette>=0.37.0

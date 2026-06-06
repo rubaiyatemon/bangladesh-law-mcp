@@ -10,7 +10,12 @@ context.
 Data layout: one JSON file per act inside the directory pointed to by
 the BLA_DATA_DIR env var (default: ../Data/acts relative to this file).
 
-Transport: stdio (default for local MCP clients).
+Transport:
+  * stdio (default) - local MCP clients such as Claude Desktop, Gemini
+    CLI, Cursor, etc.
+  * Streamable HTTP - selected via TRANSPORT=http, mounts the MCP
+    endpoint at /mcp and a /healthz liveness check alongside it. Used
+    when the server is hosted (Fly.io, Docker, etc.).
 """
 
 from __future__ import annotations
@@ -25,6 +30,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from mcp.server.fastmcp import FastMCP
+from starlette.responses import JSONResponse
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -168,6 +174,32 @@ mcp = FastMCP(
         "and legal-system context for the period when the act was passed."
     ),
 )
+
+
+# ---------------------------------------------------------------------------
+# Health check (used by Fly.io / load balancers)
+# ---------------------------------------------------------------------------
+
+
+@mcp.custom_route("/healthz", methods=["GET"])
+def healthz(_request):  # type: ignore[no-untyped-def]
+    """Return a tiny liveness/readiness JSON payload.
+
+    Exposed as a plain Starlette route by FastMCP, so it works regardless
+    of the MCP transport in use (stdio is unaffected). On Fly.io the
+    platform hits this every few seconds to decide if the VM is healthy.
+    """
+    return JSONResponse(
+        {
+            "status": "ok",
+            "server": "bangladesh-law-mcp",
+            "acts_loaded": len(_index),
+            "sections_loaded": sum(
+                (m.get("num_sections") or 0) for m in _index
+            ),
+            "data_dir": str(DATA_DIR),
+        }
+    )
 
 
 # ----- helpers --------------------------------------------------------------
@@ -486,8 +518,35 @@ def act_resource(act_id: str) -> str:
 
 
 def main() -> None:
-    """Console-script entry point: `bangladesh-law-mcp`."""
-    mcp.run()
+    """Console-script entry point: `bangladesh-law-mcp`.
+
+    Transport is selected via the ``TRANSPORT`` env var:
+
+    * ``stdio`` (default) - JSON-RPC over stdin/stdout, used by Claude
+      Desktop, Gemini CLI, Cursor, etc. via ``mcp run server.py``.
+    * ``http`` - Streamable HTTP at ``http://<host>:8000/mcp``, used when
+      the server is hosted (Fly.io, Docker, etc.) and consumed by clients
+      that support remote MCP servers. The ``/healthz`` route is also
+      served from the same port for liveness checks.
+    """
+    transport = os.getenv("TRANSPORT", "stdio").lower().strip()
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8000"))
+
+    if transport == "http":
+        log.info("Starting Streamable HTTP transport on %s:%s/mcp", host, port)
+        # ``streamable_http`` is the modern MCP-over-HTTP transport
+        # (supersedes the old SSE transport). FastMCP mounts the MCP
+        # endpoint at /mcp and serves our /healthz alongside it.
+        mcp.settings.host = host
+        mcp.settings.port = port
+        mcp.run(transport="streamable-http")
+    elif transport == "stdio":
+        mcp.run()  # noqa: E702 - default stdio for local clients
+    else:
+        raise SystemExit(
+            f"Unknown TRANSPORT={transport!r} (expected 'stdio' or 'http')"
+        )
 
 
 if __name__ == "__main__":

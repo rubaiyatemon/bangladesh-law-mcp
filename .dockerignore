@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+*.egg
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Build / coverage
+build/
+dist/
+.coverage
+htmlcov/
+.tox/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Git + VCS
+.git/
+.gitignore
+.gitattributes
+
+# Project specific
+*.log
+*.md.bak
+!README.md
+LICENSE
+SECURITY.md
+*.toml
+!pyproject.toml
+!fly.toml
+
+# Local smoke test (if present)
+_smoke_test.py
+_smoke_test*.py

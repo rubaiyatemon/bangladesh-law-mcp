@@ -190,12 +190,85 @@ Add to your MCP config:
 
 ---
 
+## 🌐 Live Hosted Instance (Fly.io)
+
+The server is deployed as an always-on Streamable HTTP endpoint on
+[Fly.io](https://fly.io). Any MCP client that supports remote servers
+can connect to:
+
+```
+https://bangladesh-law-mcp.fly.dev/mcp
+```
+
+A liveness check is available at:
+
+```
+https://bangladesh-law-mcp.fly.dev/healthz
+```
+
+### Connecting a remote-capable client
+
+**VS Code / Cursor (Streamable HTTP):**
+
+```json
+{
+  "servers": {
+    "bangladesh-law": {
+      "type": "streamableHttp",
+      "url": "https://bangladesh-law-mcp.fly.dev/mcp"
+    }
+  }
+}
+```
+
+**Claude Desktop (if/when remote MCP is supported):**
+
+```json
+{
+  "mcpServers": {
+    "bangladesh-law": {
+      "type": "streamableHttp",
+      "url": "https://bangladesh-law-mcp.fly.dev/mcp"
+    }
+  }
+}
+```
+
+> **Note:** Most desktop MCP clients today only support `stdio`. The
+> hosted endpoint is primarily for web-based agents, custom integrations,
+> and future clients that support remote MCP. For local use, the stdio
+> transport (above) remains the simplest option.
+
+### Deploying your own instance
+
+1. Install [flyctl](https://fly.io/docs/hands-on/install-flyctl/) and sign up.
+2. Push this repo to GitHub.
+3. Create a Fly app:
+
+   ```bash
+   fly launch --no-deploy   # generates fly.toml, uses the Dockerfile
+   ```
+
+4. Deploy:
+
+   ```bash
+   fly deploy --remote-only
+   ```
+
+5. (Optional) Set up auto-deploy on push — add a `FLY_API_TOKEN` GitHub
+   secret (created with `fly tokens create deploy`) and the included
+   `.github/workflows/deploy.yml` will deploy on every push to `main`.
+
+---
+
 ## ⚙️ Configuration
 
 | Env var | Default | Purpose |
 |---------|---------|---------|
 | `BLA_DATA_DIR` | `<repo>/../Bangladesh-Legal-Acts-Dataset/Data/acts` (or sibling) | Where to find the act JSON files. Accepts the `acts/` folder or its parent `Data/` folder. |
 | `BLA_LOG_LEVEL` | `INFO` | One of `DEBUG`, `INFO`, `WARNING`, `ERROR`. Logs go to **stderr** so the stdio JSON-RPC stream stays clean. |
+| `TRANSPORT` | `stdio` | `stdio` for local clients, `http` for hosted/Streamable-HTTP mode (Fly.io, Docker). |
+| `HOST` / `PORT` | `0.0.0.0` / `8000` | Bind address and port for the HTTP transport. |
 
 ---
 
@@ -226,19 +299,23 @@ byte-compiles on Python 3.10, 3.11, and 3.12 for every push and PR.
 
 ```
 bangladesh-law-mcp/
+├── .dockerignore
 ├── .github/
 │   ├── ISSUE_TEMPLATE/
 │   │   ├── bug_report.md
 │   │   └── feature_request.md
 │   └── workflows/
-│       └── ci.yml
+│       ├── ci.yml
+│       └── deploy.yml        # auto-deploy to Fly.io
 ├── .gitignore
+├── Dockerfile                # multi-stage build (clones dataset with LFS)
 ├── LICENSE
 ├── README.md
 ├── SECURITY.md
+├── fly.toml                  # Fly.io app config (always-on free tier)
 ├── pyproject.toml
 ├── requirements.txt
-└── server.py            # the entire MCP server
+└── server.py                 # the entire MCP server
 ```
 
 ---

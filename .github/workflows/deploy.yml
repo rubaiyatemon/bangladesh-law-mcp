@@ -1,0 +1,39 @@
+name: Deploy to Fly.io
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    concurrency:
+      group: fly-deploy
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      # `--remote-only` builds the image inside Fly's own infrastructure
+      # instead of using GitHub Actions' (rate-limited) Docker build
+      # minutes. The FLY_API_TOKEN secret is created with
+      # `fly tokens create deploy`.
+      - name: Deploy to Fly
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: flyctl deploy --remote-only
+
+      - name: Smoke test the live /healthz
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          # Wait for the new VM to come up, then hit the public healthz.
+          sleep 8
+          curl --fail --silent --show-error \
+            https://bangladesh-law-mcp.fly.dev/healthz
