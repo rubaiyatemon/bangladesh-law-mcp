@@ -9,16 +9,25 @@
 # ---------- stage 1: fetch dataset ----------
 FROM python:3.12-slim AS fetcher
 
+# Pull only the act JSON files we need.
+# The upstream repo's top-level layout is:
+#   Data/acts/act-print-*.json  (the files we want)
+#   Data/Depreciated/...
+#   Data/{govt.json,filtered_act_list.csv,...}
+#   Analytics/ docs/ old/ old_Code/ ...
+# Cloning the whole repo and removing folders is slow, so we use
+# sparse-checkout scoped to "Data/acts" -- the only path we copy
+# out of the fetcher stage.
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git ca-certificates \
- && git clone --depth 1 --no-checkout \
+ && git clone --depth 1 --no-checkout --filter=blob:none \
         https://github.com/sakhadib/Bangladesh-Legal-Acts-Dataset.git \
         /tmp/dataset \
  && git -C /tmp/dataset sparse-checkout init --cone \
- && git -C /tmp/dataset sparse-checkout set acts \
+ && git -C /tmp/dataset sparse-checkout set Data/acts \
  && git -C /tmp/dataset checkout \
  && mkdir -p /tmp/dataset-out/acts \
- && cp -r /tmp/dataset/acts/. /tmp/dataset-out/acts/ \
+ && cp -r /tmp/dataset/Data/acts/. /tmp/dataset-out/acts/ \
  && apt-get purge -y git \
  && apt-get autoremove -y \
  && rm -rf /var/lib/apt/lists/* /tmp/dataset
