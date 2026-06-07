@@ -18,17 +18,26 @@ FROM python:3.12-slim AS fetcher
 # Cloning the whole repo and removing folders is slow, so we use
 # sparse-checkout scoped to "Data/acts" -- the only path we copy
 # out of the fetcher stage.
+#
+# IMPORTANT: every JSON in this dataset is Git-LFS-backed
+# (see upstream .gitattributes: "*.json filter=lfs"). A plain
+# `git clone` would only fetch the ~130-byte text pointers, and
+# every act would later fail to parse as JSON. We install git-lfs
+# and run `git lfs pull` after checkout to materialize the real
+# blobs.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git ca-certificates \
+ && apt-get install -y --no-install-recommends git ca-certificates git-lfs \
+ && git lfs install --no-repo \
  && git clone --depth 1 --no-checkout --filter=blob:none \
         https://github.com/sakhadib/Bangladesh-Legal-Acts-Dataset.git \
         /tmp/dataset \
  && git -C /tmp/dataset sparse-checkout init --cone \
  && git -C /tmp/dataset sparse-checkout set Data/acts \
  && git -C /tmp/dataset checkout \
+ && git -C /tmp/dataset lfs pull --include "Data/acts/*" \
  && mkdir -p /tmp/dataset-out/acts \
  && cp -r /tmp/dataset/Data/acts/. /tmp/dataset-out/acts/ \
- && apt-get purge -y git \
+ && apt-get purge -y git git-lfs \
  && apt-get autoremove -y \
  && rm -rf /var/lib/apt/lists/* /tmp/dataset
 

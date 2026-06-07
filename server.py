@@ -117,15 +117,47 @@ def _act_id_from_filename(name: str) -> str:
     return stem
 
 
+_LFS_POINTER_PREFIX = "version https://git-lfs.github.com/spec/v1"
+
+
+def _is_lfs_pointer(path: Path) -> bool:
+    """Return True if *path* is a Git LFS pointer rather than a real file.
+
+    A normal `git clone` of an LFS-backed repo only fetches the small
+    text stub ``version https://git-lfs.github.com/spec/v1\\noid ...``;
+    the actual blob has to be pulled with `git lfs pull` (or fetched
+    from the LFS endpoint). Detecting this early lets us fail loud with
+    a single actionable error instead of 1,000+ identical "Skipping"
+    warnings.
+    """
+    try:
+        with path.open("rb") as f:
+            head = f.read(64)
+    except OSError:
+        return False
+    return head.startswith(_LFS_POINTER_PREFIX.encode("utf-8"))
+
+
 def _build_index() -> None:
     """Walk the data directory and build the search/listing index.
 
     Defensive: a single bad JSON file is logged and skipped instead of
     crashing the whole server, so the HTTP layer can still bind and serve
     /healthz + / even if the dataset is partially broken.
+
+    Also detects Git-LFS pointer stubs up-front. If the first file we see
+    is a pointer we abort with a single, actionable error message instead
+    of emitting 1,000+ identical JSON-parse warnings.
     """
     files = sorted(DATA_DIR.glob("act-print-*.json"))
     log.info("Found %d act-print-*.json files in %s", len(files), DATA_DIR)
+    if files and _is_lfs_pointer(files[0]):
+        sample = files[0].name
+        raise RuntimeError(
+            f"Dataset files look like Git LFS pointers (first file: {sample}). "
+            "The Dockerfile must install `git-lfs` and run `git lfs pull` "
+            "after checkout. See Dockerfile stage 1 (fetcher)."
+        )
     for fp in files:
         try:
             with fp.open("r", encoding="utf-8") as f:
