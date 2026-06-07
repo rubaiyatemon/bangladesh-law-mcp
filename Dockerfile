@@ -41,7 +41,7 @@ RUN apt-get update \
  && tar -xz -C /tmp -f /tmp/git-lfs.tar.gz \
  && install -m 0755 /tmp/git-lfs-${GIT_LFS_VERSION}/git-lfs /usr/local/bin/git-lfs \
  && rm -rf /tmp/git-lfs.tar.gz /tmp/git-lfs-${GIT_LFS_VERSION} \
- && git lfs install --no-repo \
+ && git lfs install --system \
  && git --version \
  && git lfs version \
  && git clone --depth 1 --no-checkout --filter=blob:none \
