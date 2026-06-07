@@ -268,6 +268,12 @@ _LANDING_HTML = """<!doctype html>
     .pill{ display:inline-block; padding: 2px 8px; border-radius:999px;
            background:#eee; font-size:12px; }
     hr   { border: 0; border-top: 1px solid #e5e5e5; margin: 2rem 0; }
+    .credits { background: #f7faf6; border: 1px solid #d8e8d2;
+               border-radius: 8px; padding: 1rem 1.25rem; margin: 1.5rem 0; }
+    .credits h2 { margin-top: 0; }
+    .credits ul { margin: 0.25rem 0 0 1.1rem; padding: 0; }
+    .credits li { margin: 0.35rem 0; }
+    .heart { color: #2e7d32; }
   </style>
 </head>
 <body>
@@ -296,8 +302,23 @@ _LANDING_HTML = """<!doctype html>
      for full client setup (Gemini, GPT, Continue.dev, Cline, Roo Code) and a list of all
      tools: <code>list_acts</code>, <code>get_act</code>, <code>get_section</code>,
      <code>search_acts</code>, <code>get_statistics</code>.</p>
+
+  <div class="credits">
+    <h2><span class="heart">&#9829;</span> Credits</h2>
+    <p>This project exists because of two friends who went above and beyond:</p>
+    <ul>
+      <li><strong>Rubaiyat</strong> &mdash; early feedback, the test queries that
+          shaped the tool surface, and patient bug reports that turned
+          half-broken prototypes into something that actually works.</li>
+      <li><strong>Jarif</strong> &mdash; helping debug the stdio transport,
+          walking through MCP-client integration on Windows, and pushing for
+          the polished README and CI setup that make this thing shippable.</li>
+    </ul>
+    <p>Thank you both. <span class="heart">&#9829;</span></p>
+    <p class="sub">Data &copy; <a href="https://github.com/sakhadib/Bangladesh-Legal-Acts-Dataset">sakhadib/Bangladesh-Legal-Acts-Dataset</a> &middot; CC BY 4.0.</p>
+  </div>
   <hr>
-  <p class="sub">Data &copy; <a href="https://github.com/sakhadib/Bangladesh-Legal-Acts-Dataset">sakhadib/Bangladesh-Legal-Acts-Dataset</a> &middot; CC BY 4.0 &middot; Server code MIT.</p>
+  <p class="sub">Server code &copy; MIT &middot; Data &copy; <a href="https://github.com/sakhadib/Bangladesh-Legal-Acts-Dataset">sakhadib/Bangladesh-Legal-Acts-Dataset</a> &middot; CC BY 4.0</p>
 </body>
 </html>
 """

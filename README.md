@@ -19,6 +19,26 @@ act's period.
 
 ---
 
+## 💚 Credits
+
+This project was made possible by the generous help of two friends:
+
+- **Rubaiyat** — for the early feedback, the test queries that shaped the
+  tool surface, and the patient bug reports that turned half-broken
+  prototypes into something that actually works end-to-end.
+- **Jarif** — for helping debug the stdio transport, walking through
+  MCP-client integration on Windows, and pushing for the polished README
+  and CI setup that make this thing actually shippable.
+
+Thank you both — this project exists because of you. 💚
+
+And of course, **thanks to [sakhadib](https://github.com/sakhadib) and every
+contributor to the original
+[Bangladesh Legal Acts Dataset](https://github.com/sakhadib/Bangladesh-Legal-Acts-Dataset)** —
+without that carefully curated corpus, none of this would exist.
+
+---
+
 ## ✨ What you can ask
 
 Once connected, your AI assistant can answer questions like:
@@ -322,20 +342,8 @@ bangladesh-law-mcp/
 
 ## 🙏 Thanks
 
-This project stands on the shoulders of two friends whose help made it real:
-
-- **Rubaiyat** — for the early feedback, the test queries, and the patient
-  bug reports that shaped the tool surface.
-- **Jarif** — for helping debug the stdio transport, walking through
-  MCP-client integration on Windows, and pushing for the polished README and
-  CI setup that make this thing actually shippable.
-
-Thank you both. 💚
-
-And of course, **thanks to [sakhadib](https://github.com/sakhadib) and every
-contributor to the original
-[Bangladesh Legal Acts Dataset](https://github.com/sakhadib/Bangladesh-Legal-Acts-Dataset)** —
-without that carefully curated corpus, none of this would exist.
+The full credit list lives at the top of this README in the
+[**💚 Credits**](#-credits) section — please scroll up.
 
 ---
 
