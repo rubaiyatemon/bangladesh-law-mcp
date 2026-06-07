@@ -1,30 +1,46 @@
-# Byte-compiled / cache
+# ─── Python bytecode / cache ──────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-
-# Virtual environments
+.Python
+*.egg-info/
+.eggs/
+build/
+dist/
 .venv/
 venv/
 env/
-ENV/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
 
-# Editor / OS
+# ─── Editor / OS junk ──────────────────────────────────────────────────────
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Test / probe artefacts
-probe_*.txt
-_smoke_test.py
+# ─── Runtime artefacts ─────────────────────────────────────────────────────
 *.log
-
-# Local env
+*.pid
+*.sock
 .env
 .env.local
 
-# Git credential helper temp files (must NEVER be committed)
-git-cred-*
+# ─── Test / probe artefacts (kept out of the public repo) ──────────────────
+probe_*.txt
+_smoke_test.py
+
+# ─── Git credential helper temp files ─────────────────────────────────────
+# Git on Windows sometimes writes the active PAT into the cwd
+# (e.g. "UsersACERAppDataLocalTempgit-cred-abc123") when the credential
+# store is unavailable. The patterns below ignore every plausible
+# variant, at any depth.
+**/UsersACER*
+**/UsersACER*.*
 UsersACER*
+UsersACER*.*
+git-cred-*
+.git-cred-*

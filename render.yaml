@@ -1,0 +1,29 @@
+# Render Blueprint for the Bangladesh Law MCP server.
+# Uses the free Web Service tier (no credit card required).
+# Get the URL from your service dashboard, then point an MCP client
+# (Claude Desktop via "mcp-remote", VS Code, Cursor, Continue.dev,
+# Cline, Roo Code, etc.) at:
+#
+#   https://<your-service>.onrender.com/mcp
+#
+# Trigger a deploy by pushing to main, or click "Manual Deploy" in the
+# Render dashboard.
+services:
+  - type: web
+    name: bangladesh-law-mcp
+    runtime: docker
+    plan: free
+    region: oregon
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: TRANSPORT
+        value: http
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: "8000"
+      - key: BLA_LOG_LEVEL
+        value: INFO
+      - key: PYTHONUNBUFFERED
+        value: "1"

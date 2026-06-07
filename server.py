@@ -92,7 +92,12 @@ if not DATA_DIR.is_dir():
         "sibling of this repository."
     )
 
-log.info("Loading acts from %s", DATA_DIR)
+log.info("=" * 70)
+log.info("Bangladesh Law MCP server starting up")
+log.info("  python       : %s", sys.version.split()[0])
+log.info("  data dir     : %s", DATA_DIR)
+log.info("  transport    : %s", os.getenv("TRANSPORT", "stdio"))
+log.info("=" * 70)
 
 # ---------------------------------------------------------------------------
 # In-memory index
@@ -113,9 +118,14 @@ def _act_id_from_filename(name: str) -> str:
 
 
 def _build_index() -> None:
-    """Walk the data directory and build the search/listing index."""
+    """Walk the data directory and build the search/listing index.
+
+    Defensive: a single bad JSON file is logged and skipped instead of
+    crashing the whole server, so the HTTP layer can still bind and serve
+    /healthz + / even if the dataset is partially broken.
+    """
     files = sorted(DATA_DIR.glob("act-print-*.json"))
-    log.info("Indexing %d act files", len(files))
+    log.info("Found %d act-print-*.json files in %s", len(files), DATA_DIR)
     for fp in files:
         try:
             with fp.open("r", encoding="utf-8") as f:
@@ -142,10 +152,15 @@ def _build_index() -> None:
                 "source_url": data.get("source_url") or "",
             }
         )
-    log.info("Index built: %d acts", len(_index))
+    log.info("Index built: %d acts loaded into memory", len(_index))
 
 
-_build_index()
+try:
+    _build_index()
+except Exception as exc:  # noqa: BLE001
+    # Never let a bad dataset block the HTTP server from binding.
+    # /healthz will report 0 acts so the failure is visible.
+    log.exception("Failed to build index, continuing with empty index: %s", exc)
 
 
 def _load_full(act_id: str) -> dict[str, Any]:
