@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from mcp.server.fastmcp import FastMCP
-from starlette.responses import JSONResponse
+from starlette.responses import HTMLResponse, JSONResponse
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -200,6 +200,78 @@ def healthz(_request):  # type: ignore[no-untyped-def]
             "data_dir": str(DATA_DIR),
         }
     )
+
+
+_LANDING_HTML = """<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Bangladesh Law MCP Server</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font: 16px/1.55 -apple-system, system-ui, sans-serif;
+           max-width: 720px; margin: 3rem auto; padding: 0 1rem;
+           color: #1a1a1a; }
+    code, pre { font-family: ui-monospace, Consolas, monospace; }
+    code { background: #f4f4f4; padding: 0.1em 0.35em; border-radius: 4px; }
+    pre  { background: #f4f4f4; padding: 0.9rem; border-radius: 6px;
+           overflow-x: auto; }
+    h1   { margin-bottom: 0.2rem; }
+    .sub { color: #666; margin-top: 0; }
+    .pill{ display:inline-block; padding: 2px 8px; border-radius:999px;
+           background:#eee; font-size:12px; }
+    hr   { border: 0; border-top: 1px solid #e5e5e5; margin: 2rem 0; }
+  </style>
+</head>
+<body>
+  <h1>Bangladesh Law MCP Server</h1>
+  <p class="sub">A Model Context Protocol endpoint for Bangladeshi legislation.</p>
+  <p><span class="pill">status: ok</span> &nbsp;
+     <span class="pill">acts loaded: __ACTS__</span> &nbsp;
+     <span class="pill">sections: __SECTIONS__</span></p>
+
+  <h2>Endpoints</h2>
+  <ul>
+    <li><code>POST /mcp</code> &mdash; the MCP JSON-RPC endpoint (use this from your client)</li>
+    <li><code>GET&nbsp; /healthz</code> &mdash; liveness/readiness JSON</li>
+  </ul>
+
+  <h2>Connect from VS Code / Cursor</h2>
+  <pre>{"servers":{"bangladesh-law":{"type":"streamableHttp",
+  "url":"__BASE_URL__/mcp"}}}</pre>
+
+  <h2>Connect from Claude Desktop (stdio, local)</h2>
+  <pre>{"mcpServers":{"bangladesh-law":{
+  "command":"python",
+  "args":["/absolute/path/to/bangladesh-law-mcp/server.py"]}}}</pre>
+
+  <p>See the <a href="https://github.com/rubaiyatemon/bangladesh-law-mcp">GitHub repo</a>
+     for full client setup (Gemini, GPT, Continue.dev, Cline, Roo Code) and a list of all
+     tools: <code>list_acts</code>, <code>get_act</code>, <code>get_section</code>,
+     <code>search_acts</code>, <code>get_statistics</code>.</p>
+  <hr>
+  <p class="sub">Data &copy; <a href="https://github.com/sakhadib/Bangladesh-Legal-Acts-Dataset">sakhadib/Bangladesh-Legal-Acts-Dataset</a> &middot; CC BY 4.0 &middot; Server code MIT.</p>
+</body>
+</html>
+"""
+
+
+@mcp.custom_route("/", methods=["GET"])
+def landing(_request):  # type: ignore[no-untyped-def]
+    """Tiny human-facing landing page so a bare GET isn't a 404.
+
+    The real work happens at ``POST /mcp``; this is just a friendly index
+    for someone who hits the host in a browser. The template is filled in
+    at request time so act/section counts stay current.
+    """
+    base = str(_request.base_url).rstrip("/")
+    body = (
+        _LANDING_HTML
+        .replace("__ACTS__", str(len(_index)))
+        .replace("__SECTIONS__", str(sum((m.get("num_sections") or 0) for m in _index)))
+        .replace("__BASE_URL__", base)
+    )
+    return HTMLResponse(body)
 
 
 # ----- helpers --------------------------------------------------------------
@@ -531,7 +603,14 @@ def main() -> None:
     """
     transport = os.getenv("TRANSPORT", "stdio").lower().strip()
     host = os.getenv("HOST", "0.0.0.0")
-    port = int(os.getenv("PORT", "8000"))
+    # Prefer the host-assigned port if present (Render injects
+    # RENDER_EXTERNAL_PORT for web services; Fly.io leaves PORT=8000 from
+    # the Dockerfile). Falling back to PORT keeps Docker/Fly behaviour.
+    port = int(
+        os.getenv("RENDER_EXTERNAL_PORT")
+        or os.getenv("PORT")
+        or "8000"
+    )
 
     if transport == "http":
         log.info("Starting Streamable HTTP transport on %s:%s/mcp", host, port)
