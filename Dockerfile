@@ -22,22 +22,43 @@ FROM python:3.12-slim AS fetcher
 # IMPORTANT: every JSON in this dataset is Git-LFS-backed
 # (see upstream .gitattributes: "*.json filter=lfs"). A plain
 # `git clone` would only fetch the ~130-byte text pointers, and
-# every act would later fail to parse as JSON. We install git-lfs
-# and run `git lfs pull` after checkout to materialize the real
-# blobs.
+# every act would later fail to parse as JSON. We need git-lfs
+# to materialize the real blobs during checkout.
+#
+# `python:3.12-slim` does NOT ship `git-lfs` in its default
+# apt repos (exit 127 "command not found" on install), so we
+# download the upstream prebuilt Linux amd64 tarball from
+# the official git-lfs GitHub release and drop just the binary
+# into /usr/local/bin. We pin v3.7.1 (Oct 2025) and verify its
+# SHA-256 against the published hash to keep the build honest.
+ARG GIT_LFS_VERSION=3.7.1
+ARG GIT_LFS_SHA256=1c0b6ee5200ca708c5cebebb18fdeb0e1c98f1af5c1a9cba205a4c0ab5a5ec08
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git ca-certificates git-lfs \
+ && apt-get install -y --no-install-recommends git ca-certificates curl \
+ && curl -fsSL -o /tmp/git-lfs.tar.gz \
+        "https://github.com/git-lfs/git-lfs/releases/download/v${GIT_LFS_VERSION}/git-lfs-linux-amd64-v${GIT_LFS_VERSION}.tar.gz" \
+ && echo "${GIT_LFS_SHA256}  /tmp/git-lfs.tar.gz" | sha256sum -c - \
+ && tar -xz -C /tmp -f /tmp/git-lfs.tar.gz \
+ && install -m 0755 /tmp/git-lfs-${GIT_LFS_VERSION}/git-lfs /usr/local/bin/git-lfs \
+ && rm -rf /tmp/git-lfs.tar.gz /tmp/git-lfs-${GIT_LFS_VERSION} \
  && git lfs install --no-repo \
+ && git --version \
+ && git lfs version \
  && git clone --depth 1 --no-checkout --filter=blob:none \
         https://github.com/sakhadib/Bangladesh-Legal-Acts-Dataset.git \
         /tmp/dataset \
  && git -C /tmp/dataset sparse-checkout init --cone \
  && git -C /tmp/dataset sparse-checkout set Data/acts \
  && git -C /tmp/dataset checkout \
- && git -C /tmp/dataset lfs pull --include "Data/acts/*" \
+ && git -C /tmp/dataset lfs fetch --include "Data/acts/*" \
+ && git -C /tmp/dataset lfs checkout \
+ && git -C /tmp/dataset lfs ls-files | wc -l \
+ && sample=$(ls /tmp/dataset/Data/acts/act-print-*.json | head -n1) \
+ && echo "Sample file: $sample" \
+ && head -c 64 "$sample" ; echo \
  && mkdir -p /tmp/dataset-out/acts \
  && cp -r /tmp/dataset/Data/acts/. /tmp/dataset-out/acts/ \
- && apt-get purge -y git git-lfs \
+ && apt-get purge -y git \
  && apt-get autoremove -y \
  && rm -rf /var/lib/apt/lists/* /tmp/dataset
 
