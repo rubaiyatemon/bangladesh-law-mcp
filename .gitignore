@@ -24,3 +24,7 @@ _smoke_test.py
 # Local env
 .env
 .env.local
+
+# Git credential helper temp files (must NEVER be committed)
+git-cred-*
+UsersACER*
